@@ -18,7 +18,7 @@ const customAliases = {
 export default {
   input: entryPath,
   output: {
-    dir: 'test_bundle',
+    file: 'test_bundle/bundle.js',
     format: 'cjs',
   },
   plugins: [
