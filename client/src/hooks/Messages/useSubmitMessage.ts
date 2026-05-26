@@ -13,12 +13,11 @@ export default function useSubmitMessage() {
   const { conversation: addedConvo } = useAddedChatContext();
   const { ask, index, getMessages, setMessages } = useChatContext();
   const latestMessage = useLatestMessage(index);
-
   const autoSendPrompts = useRecoilValue(store.autoSendPrompts);
   const setActivePrompt = useSetRecoilState(store.activePromptByIndex(index));
 
   const submitMessage = useCallback(
-    (data?: { text: string }) => {
+    async (data?: { text: string }) => {
       if (!data) {
         return console.warn('No data provided to submitMessage');
       }
@@ -30,14 +29,26 @@ export default function useSubmitMessage() {
         setMessages([...(rootMessages || []), latestMessage]);
       }
 
-      ask(
-        {
-          text: data.text,
-        },
-        {
-          addedConvo: addedConvo ?? undefined,
-        },
-      );
+      console.log('[Contacts Debug] Attempting inject for:', data.text);
+      let finalText = data.text;
+
+      try {
+        const res = await fetch('/api/contacts/inject', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: data.text }),
+        });
+        const result = await res.json();
+        console.log('[Contacts Debug] Result:', result);
+        if (result.contactsFound > 0) {
+          finalText = result.message;
+          console.log('[Contacts] Injected', result.contactsFound, 'contacts');
+        }
+      } catch (e) {
+        console.warn('[Contacts] inject failed', e);
+      }
+
+      ask({ text: finalText }, { addedConvo: addedConvo ?? undefined });
       methods.reset();
     },
     [ask, methods, addedConvo, setMessages, getMessages, latestMessage],
@@ -50,7 +61,6 @@ export default function useSubmitMessage() {
         submitMessage({ text: parsedText });
         return;
       }
-
       const textarea = document.getElementById(mainTextareaId) as HTMLTextAreaElement | null;
       const currentText = textarea?.value ?? methods.getValues('text');
       const newText = currentText.trim().length > 1 ? `\n${parsedText}` : parsedText;

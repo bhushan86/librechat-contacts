@@ -220,6 +220,7 @@ const startServer = async () => {
 
   app.use('/api/tags', routes.tags);
   app.use('/api/mcp', routes.mcp);
+  app.use('/api/contacts', routes.contacts);
 
   app.use('/metrics', metricsRouter);
 

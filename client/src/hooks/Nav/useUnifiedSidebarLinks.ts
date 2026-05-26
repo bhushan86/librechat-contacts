@@ -1,6 +1,6 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import { MessagesSquare } from 'lucide-react';
+import { MessagesSquare, Users } from 'lucide-react';
 import { useUserKeyQuery } from 'librechat-data-provider/react-query';
 import { getConfigDefaults, getEndpointField } from 'librechat-data-provider';
 import type { TEndpointsConfig } from 'librechat-data-provider';
@@ -8,6 +8,7 @@ import type { NavLink } from '~/common';
 import ConversationsSection from '~/components/UnifiedSidebar/ConversationsSection';
 import { useGetEndpointsQuery, useGetStartupConfig } from '~/data-provider';
 import useSideNavLinks from '~/hooks/Nav/useSideNavLinks';
+import ContactsPanel from '~/components/Contacts/ContactsPanel';
 import store from '~/store';
 
 const defaultInterface = getConfigDefaults().interface;
@@ -17,29 +18,23 @@ export default function useUnifiedSidebarLinks() {
   const endpoint = conversation?.endpoint;
   const { data: startupConfig } = useGetStartupConfig();
   const { data: endpointsConfig = {} as TEndpointsConfig } = useGetEndpointsQuery();
-
   const interfaceConfig = useMemo(
     () => startupConfig?.interface ?? defaultInterface,
     [startupConfig],
   );
-
   const endpointType = useMemo(
     () => getEndpointField(endpointsConfig, endpoint, 'type'),
     [endpoint, endpointsConfig],
   );
-
   const userProvidesKey = useMemo(
     () => !!(endpointsConfig?.[endpoint ?? '']?.userProvide ?? false),
     [endpointsConfig, endpoint],
   );
-
   const { data: keyExpiry = { expiresAt: undefined } } = useUserKeyQuery(endpoint ?? '');
-
   const keyProvided = useMemo(
     () => (userProvidesKey ? !!(keyExpiry.expiresAt ?? '') : true),
     [keyExpiry.expiresAt, userProvidesKey],
   );
-
   const sideNavLinks = useSideNavLinks({
     keyProvided,
     endpoint,
@@ -58,7 +53,15 @@ export default function useUnifiedSidebarLinks() {
       Component: ConversationsSection,
     };
 
-    return [conversationLink, ...sideNavLinks];
+    const contactsLink: NavLink = {
+      title: 'com_ui_contacts' as any,
+      label: '',
+      icon: Users,
+      id: 'contacts',
+      Component: ContactsPanel,
+    };
+
+    return [conversationLink, ...sideNavLinks, contactsLink];
   }, [sideNavLinks]);
 
   return links;
